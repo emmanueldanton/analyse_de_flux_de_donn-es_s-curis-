@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from log_engine.audit import audit_scope
-from log_engine.models import LogRecord
+from log_engine.config import LogRecord
 
 MAX_SAMPLES: int = 5
 
@@ -59,6 +59,7 @@ def apply_security_rules(
     audit_sink = kwargs.pop("audit_sink", None)
     counts: defaultdict[str, int] = defaultdict(int)
     samples: defaultdict[str, list[str]] = defaultdict(list)
+    broken_rules: set[str] = set()  # pour ne prévenir qu'une fois par règle
 
     for record in records:
         for rule in args:
@@ -67,7 +68,9 @@ def apply_security_rules(
             # Seul except large du projet : une règle peut avoir n'importe quel bug
             except Exception as exc:
                 counts["rule_errors"] += 1
-                logging.error("%s a échoué : %s", rule.__name__, exc)
+                if rule.__name__ not in broken_rules:
+                    broken_rules.add(rule.__name__)
+                    logging.error("%s a échoué : %s", rule.__name__, exc)
                 continue
             if message:
                 counts[rule.__name__] += 1

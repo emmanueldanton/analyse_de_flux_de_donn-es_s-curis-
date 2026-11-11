@@ -1,6 +1,7 @@
 """Tests d'intégration : lancent le vrai main.py sur le jeu de test."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -16,8 +17,10 @@ ATTACKERS = ["198.51.100.7", "203.0.113.10", "203.0.113.20"]
 
 def run_main(*options):
     command = [sys.executable, "main.py", *options]
+    # UTF-8 forcé : sinon les accents dépendent de l'encodage du terminal
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     return subprocess.run(
-        command, cwd=ROOT, capture_output=True, encoding="utf-8", errors="replace"
+        command, cwd=ROOT, env=env, capture_output=True, encoding="utf-8"
     )
 
 

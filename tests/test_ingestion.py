@@ -10,7 +10,7 @@ from log_engine.ingestion import (
     read_log_file,
     read_many_files,
 )
-from log_engine.models import ConnectionMeta
+from log_engine.config import ConnectionMeta
 
 JSON_LINE = (
     "2026-11-04T05:53:44 | ERROR | 192.168.1.31:22/SSH | user=u017 | "

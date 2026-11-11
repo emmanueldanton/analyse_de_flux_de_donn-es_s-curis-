@@ -65,7 +65,7 @@ Alertes par règle
   rule_night_activity    285
   rule_suspicious_port    16
 
-Pic mémoire : 87 Ko
+Pic mémoire : 82 Ko
 Rapport complet : output\rapport.json
 =====================================================
 ```
@@ -89,4 +89,27 @@ pytest -q
 
 ## Rapport
 
-`notebooks/rapport.ipynb` montre chaque module en action, avec les mesures mémoire et les graphiques.
+`notebooks/rapport.ipynb` suit le barème critère par critère : pour chacun, ce que demande le sujet, où le trouver dans le code et une cellule qui le prouve.
+
+Pour qu'il tourne avec le `venv` (et pas le Python global), on déclare une fois le noyau Jupyter du projet :
+
+```bash
+python -m ipykernel install --user --name log_engine --display-name "log_engine (venv)"
+jupyter notebook notebooks/rapport.ipynb
+```
+
+## Organisation du code
+
+```text
+main.py                    point d'entrée : lance tout le pipeline
+log_engine/config.py       réglages, format d'une ligne, tuple ConnectionMeta
+log_engine/ingestion.py    Module 1 : yield, yield from, parsing
+log_engine/pipeline.py     Module 2 : filter, map, lambda, match-case
+log_engine/aggregation.py  Module 3 : set, frozenset, defaultdict, force brute
+log_engine/rules.py        Module 4 : règles et apply_security_rules(*args, **kwargs)
+log_engine/audit.py        Module 4 : audit avec globals() et locals()
+log_engine/report.py       construction, affichage et export du rapport
+scripts/generate_logs.py   création des logs de test avec attaques cachées
+tests/                     67 tests pytest
+notebooks/                 prototypage et rapport
+```

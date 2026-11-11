@@ -6,12 +6,11 @@ from datetime import datetime
 
 import pytest
 
-from log_engine.models import ConnectionMeta
+from log_engine.config import ConnectionMeta
 from log_engine.pipeline import (
     build_pipeline,
     categorize,
     count_lines,
-    has_valid_connection,
     normalize,
     route,
 )
@@ -46,11 +45,6 @@ def make_record(**changes):
 )
 def test_route(item, expected):
     assert route(item) == expected
-
-
-def test_has_valid_connection():
-    assert has_valid_connection(make_record()) is True
-    assert has_valid_connection(make_record(connection=FTP)) is False
 
 
 def test_normalize_cleans_fields_and_adds_summary():

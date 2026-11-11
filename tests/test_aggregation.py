@@ -8,7 +8,7 @@ from log_engine.aggregation import (
     detect_brute_force,
     load_blacklist,
 )
-from log_engine.models import ConnectionMeta
+from log_engine.config import ConnectionMeta
 
 
 def make_record(ip, level, payload, category, user="u001"):

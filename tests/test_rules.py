@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 
 from log_engine.audit import audit_scope, save_audit
-from log_engine.models import ConnectionMeta
+from log_engine.config import ConnectionMeta
 from log_engine.rules import (
     RULES,
     apply_security_rules,
@@ -82,11 +82,12 @@ def test_engine_keeps_five_samples_but_counts_everything():
     assert len(result["samples"]["rule_critical_level"]) == 5
 
 
-def test_broken_rule_does_not_stop_the_others():
+def test_broken_rule_does_not_stop_the_others(caplog):
     records = [make_record(level="CRITICAL"), make_record(level="CRITICAL")]
     result = apply_security_rules(broken_rule, rule_critical_level, records=records)
     assert result["counts"]["rule_errors"] == 2
     assert result["counts"]["rule_critical_level"] == 2
+    assert caplog.text.count("a échoué") == 1  # un seul message, pas un par log
 
 
 def test_rules_do_not_receive_records_or_audit_sink():

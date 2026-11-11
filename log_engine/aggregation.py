@@ -5,8 +5,7 @@ from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
-from log_engine.config import ERROR_LEVELS, LOGIN_EVENTS
-from log_engine.models import LogRecord
+from log_engine.config import ERROR_LEVELS, LOGIN_EVENTS, LogRecord
 
 
 def load_blacklist(path: str | Path) -> frozenset[str]:

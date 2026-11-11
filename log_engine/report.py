@@ -1,4 +1,4 @@
-"""Affichage et export du rapport."""
+"""Construire, afficher et enregistrer le rapport final."""
 
 import json
 from collections.abc import Mapping
@@ -8,23 +8,18 @@ from typing import Any
 
 from log_engine.config import LEVEL_ORDER
 
-TOP_LIMIT: int = 10
-BAR_WIDTH: int = 53
+WIDTH: int = 53  # largeur du cadre dans le terminal
 
 
-def sort_counts(counts: Mapping[str, int]) -> list[tuple[str, int]]:
-    """Trie un compteur du plus grand au plus petit, puis par nom."""
-    return sorted(counts.items(), key=lambda pair: (-pair[1], pair[0]))
-
-
-def top_pairs(counts: Mapping[str, int]) -> list[list[Any]]:
-    """Rend les premières paires d'un compteur, sous forme de listes pour le JSON."""
-    return [[name, count] for name, count in sort_counts(counts)[:TOP_LIMIT]]
+def ranking(counts: Mapping[str, int], limit: int | None = None) -> list[list[Any]]:
+    """Trie un compteur du plus grand au plus petit (à égalité : par nom)."""
+    pairs = sorted(counts.items(), key=lambda pair: (-pair[1], pair[0]))
+    return [[name, count] for name, count in pairs[:limit]]
 
 
 def build_report(
     files: list[str],
-    stats: Mapping[str, int],
+    lines_read: int,
     agg: dict[str, Any],
     ip_sets: dict[str, set[str]],
     brute_force: dict[str, list[str]],
@@ -33,18 +28,20 @@ def build_report(
     peak_bytes: int,
 ) -> dict[str, Any]:
     """Rassemble tous les résultats dans un dictionnaire prêt pour le JSON."""
-    read = stats["read"]
-    valid = agg["total"]
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "files": files,
-        "lines": {"read": read, "valid": valid, "rejected": read - valid},
+        "lines": {
+            "read": lines_read,
+            "valid": agg["total"],
+            "rejected": lines_read - agg["total"],
+        },
         "by_level": {level: agg["by_level"][level] for level in LEVEL_ORDER},
-        "by_category": dict(sort_counts(agg["by_category"])),
-        "top_users": top_pairs(agg["by_user"]),
+        "by_category": dict(ranking(agg["by_category"])),
+        "top_users": ranking(agg["by_user"], 10),
         "error_ips": sorted(agg["error_ips"]),
-        "top_error_ips": top_pairs(agg["error_counts"]),
-        # Le JSON ne connaît pas les set : on les convertit en listes triées
+        "top_error_ips": ranking(agg["error_counts"], 10),
+        # Le JSON ne connaît pas les set : on les écrit en listes triées
         "ip_sets": {name: sorted(ips) for name, ips in ip_sets.items()},
         "brute_force": {
             "max_failures": max_failures,
@@ -59,60 +56,45 @@ def build_report(
     }
 
 
-def join_counts(counts: Mapping[str, int]) -> str:
+def one_line(counts: Mapping[str, int]) -> str:
     """Écrit un compteur sur une ligne : INFO 12 | ERROR 3."""
-    return " | ".join([f"{name} {count}" for name, count in counts.items()])
+    return " | ".join(f"{name} {count}" for name, count in counts.items())
 
 
-def print_summary(report: dict[str, Any]) -> None:
-    """Affiche les fichiers, les lignes et les compteurs."""
+def print_report(report: dict[str, Any], report_path: str | Path) -> None:
+    """Affiche le rapport dans le terminal."""
     lines = report["lines"]
+    active = report["ip_sets"]["blacklisted_active"]
+    brute_force = report["brute_force"]
+
+    print(" RAPPORT DE SÉCURITÉ ".center(WIDTH, "="))
     print(f"Fichiers analysés : {len(report['files'])}")
     print(
         f"Lignes lues : {lines['read']} | valides : {lines['valid']} "
         f"| rejetées : {lines['rejected']}"
     )
     print()
-    print(f"{'Par niveau':<15}{join_counts(report['by_level'])}")
-    print(f"{'Par catégorie':<15}{join_counts(report['by_category'])}")
-
-
-def print_threats(report: dict[str, Any]) -> None:
-    """Affiche les IP blacklistées actives et la force brute."""
-    active = report["ip_sets"]["blacklisted_active"]
-    brute_force = report["brute_force"]
-    suspects = brute_force["suspects"]
+    print(f"{'Par niveau':<15}{one_line(report['by_level'])}")
+    print(f"{'Par catégorie':<15}{one_line(report['by_category'])}")
+    print()
     print(f"IP blacklistées encore actives ({len(active)}) : {', '.join(active)}")
     print(
         f"Force brute (seuil {brute_force['max_failures']}) : "
-        f"{len(suspects)} IP suspectes"
+        f"{len(brute_force['suspects'])} IP suspectes"
     )
-    for ip in suspects:
+    for ip in brute_force["suspects"]:
         print(f"  - {ip}")
-
-
-def print_alerts(report: dict[str, Any]) -> None:
-    """Affiche le nombre d'alertes de chaque règle."""
+    print()
     print("Alertes par règle")
     for name, count in report["alerts"]["counts"].items():
         print(f"  {name:<22}{count:>4}")
-
-
-def print_report(report: dict[str, Any], report_path: str | Path) -> None:
-    """Affiche le rapport dans le terminal."""
-    print(" RAPPORT DE SÉCURITÉ ".center(BAR_WIDTH, "="))
-    print_summary(report)
-    print()
-    print_threats(report)
-    print()
-    print_alerts(report)
     print()
     print(f"Pic mémoire : {report['performance']['peak_memory_kb']} Ko")
     print(f"Rapport complet : {report_path}")
-    print("=" * BAR_WIDTH)
+    print("=" * WIDTH)
 
 
 def save_report(report: dict[str, Any], path: str | Path) -> None:
-    """Écrit le rapport en JSON."""
+    """Écrit le rapport dans un fichier JSON lisible."""
     with open(path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
