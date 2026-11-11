@@ -2,7 +2,7 @@
 
 Outil Python en ligne de commande qui lit de gros fichiers de logs sans les charger en mémoire, les nettoie, les analyse et sort un rapport de sécurité : compteurs, IP blacklistées encore actives, attaques par force brute, alertes par règle.
 
-Auteur : Emmanuel Danton (ECE, ING3).
+Groupe 6 (ECE, ING3) : Amine Chamekh, Yacine Chemlali, Fidèle Danton, Badara Diallo.
 
 Python 3.10 ou plus. Le cœur du projet n'utilise que la bibliothèque standard.
 
