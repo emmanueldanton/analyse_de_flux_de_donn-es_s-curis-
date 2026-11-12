@@ -89,7 +89,7 @@ pytest -q
 
 ## Rapport
 
-`notebooks/rapport.ipynb` suit le barème critère par critère : pour chacun, ce que demande le sujet, où le trouver dans le code et une cellule qui le prouve.
+`notebooks/rapport.ipynb` présente chaque partie du projet en action : lecture et mémoire, structures de données, pipeline, moteur de règles, robustesse, puis la démo complète et les graphiques.
 
 Pour qu'il tourne avec le `venv` (et pas le Python global), on déclare une fois le noyau Jupyter du projet :
 
